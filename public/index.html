@@ -1,89 +1,429 @@
-<!DOCTYPE html>
+<!doctype html>
 <html lang="ja">
+  <head>
+    <meta charset="utf-8" />
+    <title>ぴーこ専用・執筆管理（プロット）</title>
+    <style>
+      body {
+        font-family: system-ui, sans-serif;
+        margin: 20px;
+      }
+      h1 {
+        margin-bottom: 0.5rem;
+      }
+      .plot-list {
+        margin-top: 1rem;
+        padding: 0;
+        list-style: none;
+      }
+      .plot-item {
+        border: 1px solid #ccc;
+        border-radius: 6px;
+        padding: 8px 10px;
+        margin-bottom: 8px;
+        cursor: pointer;
+      }
+      .plot-item:hover {
+        background: #f5f5f5;
+      }
+      .plot-title {
+        font-weight: bold;
+      }
+      .tag {
+        display: inline-block;
+        padding: 2px 6px;
+        border-radius: 4px;
+        font-size: 0.8rem;
+        border: 1px solid #888;
+        margin-right: 4px;
+      }
+      form {
+        margin-top: 1rem;
+        max-width: 480px;
+        display: grid;
+        gap: 8px;
+      }
+      label {
+        display: flex;
+        flex-direction: column;
+        font-size: 0.9rem;
+      }
+      input[type="text"],
+      textarea,
+      select {
+        padding: 4px;
+        font-size: 0.9rem;
+      }
+      button {
+        padding: 6px 10px;
+        font-size: 0.9rem;
+        cursor: pointer;
+      }
+      .filter-area {
+        display: flex;
+        flex-wrap: wrap;
+        gap: 8px;
+        align-items: flex-end;
+        margin-top: 0.5rem;
+      }
+      .filter-area label {
+        min-width: 150px;
+      }
+      .detail-box {
+        border: 1px solid #aaa;
+        border-radius: 8px;
+        padding: 10px 12px;
+        margin-top: 12px;
+        background: #fafafa;
+        max-width: 600px;
+      }
+      .detail-title {
+        font-size: 1.1rem;
+        font-weight: bold;
+        margin-bottom: 4px;
+      }
+      .detail-tags {
+        margin-bottom: 8px;
+      }
+    </style>
+  </head>
+  <body>
+    <h1>プロット管理（APIテスト版）</h1>
+    <p>FastAPI + PostgreSQL に保存されたプロットを表示するテスト画面。</p>
 
-<head>
-    <meta charset="UTF-8">
-    <title>鈴木茜の小説サイト | Top</title>
-    <meta name="viewport" content="width=device-width, initial-scale=1">
-    <meta name="description" content="一次創作小説のポータルサイト">
-    <link rel="stylesheet" href="assets/css/style.css">
-    <script src="assets/js/main.js" defer></script>
-</head>
+    <section>
+      <h2>プロット一覧</h2>
 
-<body>
-    <header class="site-header">
-        <div class="container header-inner">
-            <a href="index.html" class="site-title">鈴木茜の小説棚</a>
-            <button class="nav-toggle" aria-label="メニューを開く">
-                ☰
-            </button>
-            <nav class="site-nav">
-                <ul>
-                    <li><a href="index.html" class="active">作品一覧</a></li>
-                    <li><a href="about.html">このサイトについて</a></li>
-                </ul>
-            </nav>
+      <div class="filter-area">
+        <label>
+          作品で絞り込み
+          <select id="filter-work">
+            <option value="">（すべて）</option>
+            <option value="リヒトパーカー">リヒトパーカー</option>
+            <option value="ソフィア外伝">ソフィア外伝</option>
+            <option value="現代恋愛">現代恋愛</option>
+          </select>
+        </label>
+
+        <label>
+          ステータスで絞り込み
+          <select id="filter-status">
+            <option value="">（すべて）</option>
+            <option value="未着手">未着手</option>
+            <option value="プロット中">プロット中</option>
+            <option value="執筆中">執筆中</option>
+            <option value="初稿完成">初稿完成</option>
+            <option value="推敲中">推敲中</option>
+            <option value="完成">完成</option>
+          </select>
+        </label>
+
+        <label>
+          キーワード検索（タイトル・あらすじ）
+          <input type="text" id="filter-q" placeholder="例：村 / 神 / ヨティス など" />
+        </label>
+
+        <div>
+          <button id="filter-btn">絞り込み</button>
+          <button id="reload-btn">全部表示</button>
         </div>
-    </header>
+      </div>
 
-    <main class="site-main">
-        <section class="hero">
-            <div class="container hero-inner">
-                <div class="hero-text">
-                    <h1>ようこそ、物語の棚へ。</h1>
-                    <p>
-                        オリジナル長編「リヒト・パーカー」を中心に、<br>
-                        異世界・現代ドラマなど、いろいろ詰め込んだ小説サイトです。
-                    </p>
-                    <a class="btn primary" href="works/licht-parker.html">「リヒト・パーカー」を見る</a>
-                </div>
-                <div class="hero-image">
-                    <img src="assets/img/header.png" alt="サイトイメージ">
-                </div>
-            </div>
-        </section>
+      <ul id="plot-list" class="plot-list"></ul>
+    </section>
 
-        <section class="section">
-            <div class="container">
-                <h2 class="section-title">作品一覧</h2>
+    <section>
+      <h2>選択中のプロット詳細</h2>
+      <div id="detail-area">
+        <p>一覧からプロットをクリックすると、ここに詳細が表示されます。</p>
+      </div>
+    </section>
 
-                <div class="cards">
-                    <article class="card">
-                        <h3 class="card-title">
-                            <a href="works/licht-parker.html">リヒト・パーカー</a>
-                        </h3>
-                        <p class="card-meta">ジャンル：異世界ファンタジー / ヒューマンドラマ</p>
-                        <p class="card-text">
-                            「可哀想」と言われ続けた少年が、異世界で“自分として生きる”ことを選ぶまでの物語。
-                        </p>
-                        <a class="card-link" href="works/licht-parker.html">作品ページへ</a>
-                    </article>
+    <section>
+      <h2>新しいプロットを追加</h2>
+      <form id="plot-form">
+        <label>
+          作品名（work）
+          <input type="text" name="work" value="リヒトパーカー" required />
+        </label>
+        <label>
+          章タイトル（title）
+          <input type="text" name="title" placeholder="第X章：～～" required />
+        </label>
+        <label>
+          ステータス（status）
+          <select name="status">
+            <option value="未着手">未着手</option>
+            <option value="プロット中" selected>プロット中</option>
+            <option value="執筆中">執筆中</option>
+            <option value="初稿完成">初稿完成</option>
+            <option value="推敲中">推敲中</option>
+            <option value="完成">完成</option>
+          </select>
+        </label>
+        <label>
+          あらすじ（summary）
+          <textarea name="summary" rows="3" placeholder="ざっくり内容"></textarea>
+        </label>
+        <button type="submit">追加</button>
+      </form>
+      <p id="message"></p>
+    </section>
 
-                    <article class="card">
-                        <h3 class="card-title">
-                            <a href="works/another-story.html">ディースカップル</a>
-                        </h3>
-                        <p class="card-meta">ジャンル：現代 / 同性愛 / 共依存</p>
-                        <p class="card-text">
-                            幼馴染との共依存から、決別と再出発を描く現代恋愛ドラマ。
-                        </p>
-                        <a class="card-link" href="works/another-story.html">作品ページへ</a>
-                    </article>
+        <script>
+      const plotList = document.getElementById("plot-list");
+      const reloadBtn = document.getElementById("reload-btn");
+      const filterBtn = document.getElementById("filter-btn");
+      const form = document.getElementById("plot-form");
+      const messageEl = document.getElementById("message");
 
-                </div>
-            </div>
-        </section>
-    </main>
+      const workFilter = document.getElementById("filter-work");
+      const statusFilter = document.getElementById("filter-status");
+      const qFilter = document.getElementById("filter-q");
 
-    <footer class="site-footer">
-        <div class="container footer-inner">
-            <p>&copy; 2025 鈴木茜</p>
-            <p class="footer-links">
-                <a href="about.html">このサイトについて</a> /
-                <a href="https://github.com" target="_blank" rel="noopener noreferrer">GitHub</a>
-            </p>
+      const detailArea = document.getElementById("detail-area");
+
+      // 一件分の詳細を描画するだけの関数（API叩かない）
+      function renderDetail(plot) {
+        if (!plot) {
+          detailArea.innerHTML =
+           "<p>一覧からプロットをクリックすると、ここに詳細が表示されます。</p>";
+           return;
+          }
+
+        detailArea.innerHTML = `
+        <div class="detail-box">
+          <div class="detail-title">${plot.title}</div>
+          <div class="detail-tags">
+            <span class="tag">作品: ${plot.work}</span>
+            <span class="tag">ステータス: ${plot.status}</span>
+            <span class="tag">ID: ${plot.id}</span>
+          </div>
+          <div>
+            <strong>あらすじ</strong>
+            <p>${plot.summary ?? "（未設定）"}</p>
+          </div>
+
+          <div style="margin-top:10px;">
+            <button id="edit-btn">編集する</button>
+            <button id="delete-btn" style="margin-left:8px;color:#b00;">削除</button>
+          </div>
         </div>
-    </footer>
-</body>
+      `;
 
+  // 編集ボタンのイベント
+  document.getElementById("edit-btn").onclick = () => {
+    openEditForm(plot);
+  };
+
+function openEditForm(plot) {
+  detailArea.innerHTML = `
+    <div class="detail-box">
+      <h3>編集：ID ${plot.id}</h3>
+      <form id="edit-form" style="display:grid;gap:8px;max-width:400px;">
+        <label>
+          作品名
+          <input type="text" name="work" value="${plot.work}" />
+        </label>
+        <label>
+          タイトル
+          <input type="text" name="title" value="${plot.title}" />
+        </label>
+        <label>
+          ステータス
+          <select name="status">
+            <option ${plot.status==="未着手"?"selected":""}>未着手</option>
+            <option ${plot.status==="プロット中"?"selected":""}>プロット中</option>
+            <option ${plot.status==="執筆中"?"selected":""}>執筆中</option>
+            <option ${plot.status==="初稿完成"?"selected":""}>初稿完成</option>
+            <option ${plot.status==="推敲中"?"selected":""}>推敲中</option>
+            <option ${plot.status==="完成"?"selected":""}>完成</option>
+          </select>
+        </label>
+        <label>
+          あらすじ
+          <textarea name="summary" rows="3">${plot.summary ?? ""}</textarea>
+        </label>
+        <button type="submit">保存</button>
+        <button type="button" id="cancel-edit">キャンセル</button>
+      </form>
+    </div>
+  `;
+
+  document.getElementById("cancel-edit").onclick = () => {
+    renderDetail(plot);
+  };
+
+  document.getElementById("edit-form").onsubmit = async (e) => {
+    e.preventDefault();
+
+    const formData = new FormData(e.target);
+    const body = {
+      work: formData.get("work"),
+      title: formData.get("title"),
+      status: formData.get("status"),
+      summary: formData.get("summary"),
+    };
+
+    const res = await fetch(`/api/plots/${plot.id}`, {
+      method: "PUT",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify(body),
+    });
+
+    if (!res.ok) {
+      alert("編集に失敗しました");
+      return;
+    }
+
+    const updated = await res.json();
+    await loadPlots({ useFilters: true });
+    renderDetail(updated);
+  };
+}
+
+  // 削除ボタンのイベント
+  document.getElementById("delete-btn").onclick = () => {
+    deletePlot(plot.id);
+  };
+}
+
+async function deletePlot(id) {
+  if (!confirm(`本当に削除しますか？\nID: ${id}`)) return;
+
+  const res = await fetch(`/api/plots/${id}`, {
+    method: "DELETE",
+  });
+
+  if (!res.ok) {
+    alert("削除に失敗しました");
+    return;
+  }
+
+  alert("削除しました！");
+  await loadPlots({ useFilters: true });
+  renderDetail(null);
+}
+
+
+      // 一覧読み込み（必要ならフィルタ付き）
+      async function loadPlots(options = {}) {
+        const { useFilters = false } = options;
+
+        plotList.innerHTML = "<li>読み込み中...</li>";
+
+        let url = "/api/plots";
+        const params = new URLSearchParams();
+
+        if (useFilters) {
+          if (workFilter.value) params.append("work", workFilter.value);
+          if (statusFilter.value) params.append("status", statusFilter.value);
+          if (qFilter.value) params.append("q", qFilter.value);
+        }
+
+        if ([...params].length > 0) {
+          url += "?" + params.toString();
+        }
+
+        try {
+          const res = await fetch(url);
+          if (!res.ok) {
+            throw new Error("APIエラー: " + res.status);
+          }
+          const data = await res.json();
+          if (!Array.isArray(data) || data.length === 0) {
+            plotList.innerHTML = "<li>該当するプロットがありません。</li>";
+            renderDetail(null);
+            return;
+          }
+
+          plotList.innerHTML = "";
+          data.forEach((plot) => {
+            const li = document.createElement("li");
+            li.className = "plot-item";
+            li.dataset.id = plot.id;
+            li.innerHTML = `
+              <div class="plot-title">${plot.title}</div>
+              <div>
+                <span class="tag">作品: ${plot.work}</span>
+                <span class="tag">ステータス: ${plot.status}</span>
+                <span class="tag">ID: ${plot.id}</span>
+              </div>
+              <p>${plot.summary ?? ""}</p>
+            `;
+
+            // クリックしたら「そのplot」をそのまま詳細に描画
+            li.addEventListener("click", () => {
+              renderDetail(plot);
+            });
+
+            plotList.appendChild(li);
+          });
+
+          // フィルタあり読み込みのときは、先頭を自動で詳細表示してもいい
+          if (useFilters && data.length > 0) {
+            renderDetail(data[0]);
+          }
+        } catch (err) {
+          console.error(err);
+          plotList.innerHTML =
+            "<li>読み込み失敗しました。コンソールを確認してください。</li>";
+          renderDetail(null);
+        }
+      }
+
+      filterBtn.addEventListener("click", () => {
+        loadPlots({ useFilters: true });
+      });
+
+      reloadBtn.addEventListener("click", () => {
+        workFilter.value = "";
+        statusFilter.value = "";
+        qFilter.value = "";
+        loadPlots({ useFilters: false });
+      });
+
+      form.addEventListener("submit", async (e) => {
+        e.preventDefault();
+        messageEl.textContent = "";
+
+        const formData = new FormData(form);
+        const body = {
+          work: formData.get("work"),
+          title: formData.get("title"),
+          status: formData.get("status"),
+          summary: formData.get("summary"),
+        };
+
+        try {
+          const res = await fetch("/api/plots", {
+            method: "POST",
+            headers: { "Content-Type": "application/json" },
+            body: JSON.stringify(body),
+          });
+          if (!res.ok) {
+            throw new Error("APIエラー: " + res.status);
+          }
+          const created = await res.json();
+          messageEl.textContent = `追加しました（ID: ${created.id}）`;
+          form.reset();
+          form.work.value = "リヒトパーカー";
+          form.status.value = "プロット中";
+
+          // 追加後は現在のフィルタ状態で再読み込み
+          await loadPlots({ useFilters: true });
+
+          // さっき追加したやつを詳細に表示（createdの中身で描画）
+          renderDetail(created);
+        } catch (err) {
+          console.error(err);
+          messageEl.textContent = "追加に失敗しました。コンソールを見てね。";
+        }
+      });
+
+      // 初期表示（フィルタなしで全部）
+      loadPlots();
+    </script>
+
+  </body>
 </html>

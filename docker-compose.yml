@@ -7,8 +7,33 @@ services:
     ports:
       - "8080:80"
     volumes:
-      # public -> /usr/share/nginx/html
       - ./public:/usr/share/nginx/html:ro
-      # 自前の設定
       - ./nginx/conf.d:/etc/nginx/conf.d:ro
+    depends_on:
+      - api
     restart: unless-stopped
+
+  api:
+    build: ./api
+    container_name: novel-site-api
+    ports:
+      - "8000:8000"
+    volumes:
+      - ./api:/app
+    environment:
+      - DATABASE_URL=postgresql://app:pass@db:5432/appdb
+    depends_on:
+      - db
+    restart: unless-stopped
+
+  db:
+    image: postgres:16
+    container_name: novel-site-db
+    environment:
+      - POSTGRES_DB=appdb
+      - POSTGRES_USER=app
+      - POSTGRES_PASSWORD=pass
+    volumes:
+      - ./db-data:/var/lib/postgresql/data
+    restart: unless-stopped
+
