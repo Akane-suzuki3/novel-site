@@ -132,7 +132,7 @@ def create_plot(data: PlotCreate, db: Session = Depends(get_db)):
     db.add(plot)
     db.commit()
     db.refresh(plot)
-    return plotF
+    return plot
 
 
 @app.put("/plots/{plot_id}", response_model=PlotRead)
